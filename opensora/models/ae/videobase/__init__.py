@@ -4,10 +4,15 @@ new code
 from .vqvae import (
     VQVAEConfiguration,
     VQVAEModel,
-    VQVAETrainer,
-    VQVAEDataset, VideoGPTVQVAEWrapper
+    VideoGPTVQVAEWrapper
+)
+from .vqvae_iu import (
+    VQVAEIUConfiguration,
+    VQVAEIUModel,
 )
 
+from .videoae_trainer import VideoAETrainer
+from .videoae_dataset import InternVIDAEDataset, VideoAEDataset, build_videoae_dataset
 
 """
 old code

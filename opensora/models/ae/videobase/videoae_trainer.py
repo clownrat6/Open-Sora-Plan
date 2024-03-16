@@ -1,22 +1,19 @@
-from transformers import Trainer
-import torch.nn.functional as F
-from typing import Optional
 import os
-import torch
-from transformers.utils import WEIGHTS_NAME
 import json
+from typing import Optional
 
-class VQVAETrainer(Trainer):
+import torch
+import torch.nn.functional as F
+from transformers import Trainer
+from transformers.utils import WEIGHTS_NAME
+
+
+class VideoAETrainer(Trainer):
 
     def compute_loss(self, model, inputs, return_outputs=False):
         model = model.module
         x = inputs.get("video")
-        z = model.pre_vq_conv(model.encoder(x))
-        vq_output = model.codebook(z)
-        x_recon = model.decoder(model.post_vq_conv(vq_output["embeddings"]))
-        recon_loss = F.mse_loss(x_recon, x) / 0.06
-        commitment_loss = vq_output['commitment_loss']
-        loss = recon_loss + commitment_loss
+        loss = model(x)
         return loss
 
     def _save(self, output_dir: Optional[str] = None, state_dict=None):

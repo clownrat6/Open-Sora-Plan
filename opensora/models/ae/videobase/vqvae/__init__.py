@@ -3,8 +3,6 @@ from torch import nn
 
 from .configuration_vqvae import VQVAEConfiguration
 from .modeling_vqvae import VQVAEModel
-from .trainer_vqvae import VQVAETrainer
-from .dataset_vqvae import VQVAEDataset
 
 
 videovqvae = [
@@ -14,6 +12,7 @@ videovqvae = [
     "kinetics_stride2x4x4",
 ]
 videovae = []
+
 
 class VideoGPTVQVAEWrapper(nn.Module):
     def __init__(self, ckpt='kinetics_stride4x4x4'):

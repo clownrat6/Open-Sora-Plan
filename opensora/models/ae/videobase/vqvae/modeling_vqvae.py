@@ -1,14 +1,17 @@
-from ..modeling_videobase import VideoBaseAE
-import torch
-from torch import nn, Tensor
-import numpy as np
-import torch.distributed as dist
-import torch.nn.functional as F
-import math
 import os
+import math
 import json
 from typing import Tuple, Dict, Union
+
+import torch
+import torch.nn as nn
+import torch.distributed as dist
+import torch.nn.functional as F
+import numpy as np
+from torch import Tensor
+
 from .configuration_vqvae import VQVAEConfiguration
+from ..modeling_videobase import VideoBaseAE
 
 
 # Copied from https://github.com/wilson1yan/VideoGPT
@@ -727,9 +730,14 @@ class VQVAEModel(VideoBaseAE):
     def forward(self, x):
         z = self.pre_vq_conv(self.encoder(x))
         vq_output = self.codebook(z)
+        comme_loss = vq_output['commitment_loss']
         x_recon = self.decoder(self.post_vq_conv(vq_output["embeddings"]))
         recon_loss = F.mse_loss(x_recon, x) / 0.06
-        return recon_loss, x_recon, vq_output
+        if self.training:
+            loss = comme_loss + recon_loss
+            return loss
+        else:
+            return x_recon
 
     def encode(self, x: Tensor, include_embeddings: bool = False) -> Union[Tuple[Tensor, Tensor], Tensor]:
         h = self.pre_vq_conv(self.encoder(x))
@@ -765,7 +773,7 @@ class VQVAEModel(VideoBaseAE):
             model = cls(config=VQVAEConfiguration(**config))
             model.load_state_dict(state_dict)
             return model
-            
+
     @classmethod
     def download_and_load_model(cls, model_name, cache_dir=None):
         from .....utils.downloader import gdown_download
