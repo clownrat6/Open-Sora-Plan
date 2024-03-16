@@ -34,11 +34,10 @@ class Decoder(nn.Module):
         for i in range(max_us):
             out_channels = 3 if i == max_us - 1 else n_hiddens
             us = tuple([2 if d > 0 else 1 for d in n_times_upsample])
-            # convt = SamePadConvTranspose3d(n_hiddens, out_channels, 4, stride=us)
             if i < max_us - 1:
-                convu = nn.Sequential(nn.Upsample(scale_factor=us), SamePadConv3d(n_hiddens, out_channels, 3), nn.BatchNorm3d(out_channels), nn.ReLU())
+                convu = nn.Sequential(SamePadConv3d(n_hiddens, out_channels, 3), nn.BatchNorm3d(out_channels), nn.ReLU(inplace=True), nn.Upsample(scale_factor=us, mode='trilinear'))
             else:
-                convu = nn.Sequential(SamePadConv3d(n_hiddens, out_channels, 3), nn.Tanh())
+                convu = nn.Sequential(SamePadConv3d(n_hiddens, out_channels, 3), nn.Upsample(scale_factor=us, mode='trilinear'), nn.Tanh())
             self.convus.append(convu)
             n_times_upsample -= 1
 
@@ -106,8 +105,8 @@ class VQVAEIUModel(VideoBaseAE):
             with open(os.path.join(model_path, "config.json"), "r") as file:
                 config = json.load(file)
             state_dict = torch.load(os.path.join(model_path, "pytorch_model.bin"), map_location="cpu")
-            model = cls(config=VQVAEConfiguration(**config))
-            model.load_state_dict(state_dict)
+            model = cls(config=VQVAEIUConfiguration(**config))
+            model.load_state_dict(state_dict, strict=False)
             return model
 
     @classmethod
