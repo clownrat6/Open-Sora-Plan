@@ -43,8 +43,6 @@ def train(args, ae_args, training_args):
         model = VQVAEModel(config)
     elif training_args.train_model == "vqvaeiu":
         model = VQVAEIUModel(config)
-    # Load Model
-    model = VQVAEModel(config)
     # Load Dataset
     dataset = build_videoae_dataset(args.data_path, sequence_length=args.sequence_length, resolution=config.resolution)
     # Load Trainer
