@@ -9,6 +9,7 @@ import torch.distributed as dist
 import torch.nn.functional as F
 import numpy as np
 from torch import Tensor
+from transformers.utils import WEIGHTS_NAME
 
 from .configuration_vqvae import VQVAEConfiguration
 from ..modeling_videobase import VideoBaseAE
@@ -781,3 +782,9 @@ class VQVAEModel(VideoBaseAE):
             cls.DOWNLOADED_VQVAE[model_name], model_name, cache_dir=cache_dir
         )
         return cls.load_from_checkpoint(path)
+
+    def save_checkpoint(self, output_dir):
+        os.makedirs(output_dir, exist_ok=True)
+        with open(os.path.join(output_dir, "config.json"), "w") as file:
+            json.dump(self.config.to_dict(), file)
+        torch.save(self.state_dict(), os.path.join(output_dir, WEIGHTS_NAME))

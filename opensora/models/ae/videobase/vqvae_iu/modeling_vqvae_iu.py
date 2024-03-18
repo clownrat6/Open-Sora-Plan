@@ -9,6 +9,7 @@ import torch.distributed as dist
 import torch.nn.functional as F
 import numpy as np
 from torch import Tensor
+from transformers.utils import WEIGHTS_NAME
 
 from .configuration_vqvae_iu import VQVAEIUConfiguration
 from ..modeling_videobase import VideoBaseAE
@@ -35,9 +36,9 @@ class Decoder(nn.Module):
             out_channels = 3 if i == max_us - 1 else n_hiddens
             us = tuple([2 if d > 0 else 1 for d in n_times_upsample])
             if i < max_us - 1:
-                convu = nn.Sequential(SamePadConv3d(n_hiddens, out_channels, 3), nn.BatchNorm3d(out_channels), nn.ReLU(inplace=True), nn.Upsample(scale_factor=us, mode='trilinear'))
+                convu = nn.Sequential(SamePadConv3d(n_hiddens, out_channels, 3), nn.BatchNorm3d(out_channels), nn.ReLU(), nn.Upsample(scale_factor=us, mode='trilinear'))
             else:
-                convu = nn.Sequential(SamePadConv3d(n_hiddens, out_channels, 3), nn.Upsample(scale_factor=us, mode='trilinear'), nn.Tanh())
+                convu = nn.Sequential(SamePadConv3d(n_hiddens, out_channels, 3), nn.Upsample(scale_factor=us, mode='trilinear'))
             self.convus.append(convu)
             n_times_upsample -= 1
 
@@ -106,7 +107,7 @@ class VQVAEIUModel(VideoBaseAE):
                 config = json.load(file)
             state_dict = torch.load(os.path.join(model_path, "pytorch_model.bin"), map_location="cpu")
             model = cls(config=VQVAEIUConfiguration(**config))
-            model.load_state_dict(state_dict, strict=False)
+            model.load_state_dict(state_dict)
             return model
 
     @classmethod
@@ -116,3 +117,9 @@ class VQVAEIUModel(VideoBaseAE):
             cls.DOWNLOADED_VQVAE[model_name], model_name, cache_dir=cache_dir
         )
         return cls.load_from_checkpoint(path)
+
+    def save_checkpoint(self, output_dir):
+        os.makedirs(output_dir, exist_ok=True)
+        with open(os.path.join(output_dir, "config.json"), "w") as file:
+            json.dump(self.config.to_dict(), file)
+        torch.save(self.state_dict(), os.path.join(output_dir, WEIGHTS_NAME))

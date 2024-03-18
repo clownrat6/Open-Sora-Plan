@@ -12,7 +12,7 @@ from .vqvae_iu import (
 )
 
 from .videoae_trainer import VideoAETrainer
-from .videoae_dataset import InternVIDAEDataset, VideoAEDataset, build_videoae_dataset
+from .videoae_dataset import Kinetics400Dataset, InternVIDAEDataset, VideoAEDataset, build_videoae_dataset
 
 """
 old code

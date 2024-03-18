@@ -7,6 +7,8 @@ import random
 import warnings
 
 import torch
+import decord
+import torchvision
 import numpy as np
 import torch.utils.data as data
 import torch.distributed as dist
@@ -15,11 +17,66 @@ from torchvision.datasets.video_utils import VideoClips
 from decord import VideoReader, cpu
 
 
+decord.bridge.set_bridge('torch')
+
+
 def build_videoae_dataset(data_folder, sequence_length, resolution, train=True):
     if 'internvid_hr' in data_folder:
         return InternVIDAEDataset(data_folder, sequence_length, resolution)
+    elif 'kinetics' in data_folder:
+        return Kinetics400Dataset(data_folder, sequence_length, resolution, train)
     else:
         return VideoAEDataset(data_folder, sequence_length, resolution, train)
+
+
+class Kinetics400Dataset(data.Dataset):
+    exts = ['avi', 'mp4', 'webm']
+
+    def __init__(self, data_folder, sequence_length, resolution=64, train=True):
+        """
+        Args:
+            data_folder: path to the folder with videos. The folder
+                should contain a 'train' and a 'test' directory,
+                each with corresponding videos stored
+            sequence_length: length of extracted video sequences
+        """
+        super().__init__()
+        self.train = train
+        self.sequence_length = sequence_length
+        self.resolution = resolution
+
+        if train:
+            folder = osp.join(data_folder, 'videos_train')
+            file_list = osp.join(data_folder, 'kinetics400_train_list_videos.txt' if train else 'kinetics400_val_list_videos.txt')
+        else:
+            folder = osp.join(data_folder, 'videos_val')
+            file_list = osp.join(data_folder, 'kinetics400_val_list_videos.txt')
+        
+        self.files = [os.path.join(folder, x.split(' ')[0]) for x in open(file_list, 'r').readlines()]
+
+    def __len__(self):
+        return len(self.files)
+
+    def __getitem__(self, idx):
+        resolution = self.resolution
+        # import time
+        # s = time.time()
+        # decord_vr = VideoReader(self.files[idx], ctx=cpu(0))
+
+        # if len(decord_vr) < self.sequence_length:
+        #     return self.__getitem__(random.randint(0, self.__len__() - 1))
+        
+        # start_idx = random.randint(0, len(decord_vr) - self.sequence_length)
+        # all_indices = np.arange(start_idx, start_idx + self.sequence_length, 1)
+        # video_data = decord_vr.get_batch(all_indices)
+        # e = time.time()
+        # print(e - s)
+
+        video_path = self.files[idx]
+
+        reader = torchvision.io.VideoReader(video_path, "video", num_threads=16, device="cuda")
+
+        return dict(video=preprocess(video_data, resolution))
 
 
 class InternVIDAEDataset(data.Dataset):
